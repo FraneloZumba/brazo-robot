@@ -1,0 +1,272 @@
+<div class="bg-background-dark text-gray-100 font-body min-h-screen lacquer-grid overflow-hidden dark">
+  <header class="w-full bg-surface-dark border-b border-border-lacquer shadow-lg z-50 relative">
+    <div class="max-w-[1920px] mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <span
+          class="material-icons-round text-primary text-3xl animate-pulse"
+          style="text-shadow: 0 0 10px #8B0000;"
+        >
+          precision_manufacturing
+        </span>
+        <h1 class="text-2xl font-display font-bold tracking-widest text-white uppercase">
+          Robot Arm <span class="text-primary">Studio</span>
+          <span class="text-xs text-gray-500 font-mono tracking-normal ml-2 normal-case">
+            Frxnelo Edition
+          </span>
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <div
+          id="connectionStatus"
+          class="flex items-center gap-2 px-4 py-1.5 bg-black border rounded-sm"
+          [ngClass]="isConnected ? 'border-green-900' : 'border-red-900'"
+        >
+          <span class="relative flex h-2 w-2">
+            <span
+              id="statusIndicatorInner"
+              class="absolute inline-flex h-full w-full rounded-full opacity-75"
+              [ngClass]="isConnected ? 'bg-green-600 animate-ping' : 'bg-red-600'"
+            ></span>
+            <span
+              id="statusIndicator"
+              class="relative inline-flex rounded-full h-2 w-2"
+              [ngClass]="isConnected ? 'bg-green-600' : 'bg-red-600'"
+            ></span>
+          </span>
+
+          <span
+            id="statusText"
+            class="font-mono font-bold text-xs tracking-wide uppercase"
+            [ngClass]="isConnected ? 'text-green-600' : 'text-red-600'"
+          >
+            {{ isConnected ? 'Connected' : 'Disconnected' }}
+          </span>
+        </div>
+
+        <button
+          id="connectBtn"
+          class="text-white font-display font-bold py-2 px-6 rounded-sm shadow-neon-red transition-all transform hover:scale-105 uppercase text-sm border border-red-900"
+          [ngClass]="isConnected ? 'bg-red-900 hover:bg-red-800' : 'bg-primary hover:bg-primary-light'"
+          (click)="toggleConnection()"
+        >
+          {{ isConnected ? 'Disconnect' : 'Connect' }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex flex-col lg:flex-row h-[calc(100vh-80px)] p-6 gap-6 max-w-[1920px] mx-auto overflow-hidden">
+    <section class="flex-grow flex flex-col gap-6 w-full lg:w-3/4 overflow-y-auto custom-scrollbar pr-2">
+      <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-display text-gray-200 tracking-wider flex items-center gap-2">
+            <span class="material-icons-round text-primary">tune</span>
+            MANUAL CONTROL
+          </h2>
+
+          <div class="flex gap-2 ml-4">
+            <button
+              id="homeBtn"
+              class="px-5 py-2 bg-primary/20 border border-primary text-primary-light hover:bg-primary/40 rounded-sm text-xs font-mono transition uppercase font-bold shadow-neon-red"
+              (click)="goHome()"
+            >
+              HOME (All 0°)
+            </button>
+          </div>
+        </div>
+
+        <span id="modeLabel" class="text-xs font-mono text-primary font-bold">
+          {{ modeLabel }}
+        </span>
+      </div>
+
+      <div id="motorsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+        <div
+          *ngFor="let motor of motors"
+          class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300"
+        >
+          <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">
+            {{ motor.id.toUpperCase() }}
+          </div>
+
+          <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">
+            {{ motor.label }}
+          </h3>
+
+          <div class="vertical-slider-container w-full">
+            <input
+              [id]="'slider-' + motor.id"
+              class="vertical-slider motor-slider"
+              [max]="motor.max"
+              [min]="motor.min"
+              [step]="motor.step"
+              type="range"
+              [value]="motor.value"
+              (input)="updateMotor(motor, $any($event.target).value)"
+            />
+          </div>
+
+          <div class="text-center w-full mt-2">
+            <span
+              [id]="'val-' + motor.id"
+              class="block text-2xl font-mono text-primary font-bold drop-shadow-sm"
+            >
+              {{ motor.value }}°
+            </span>
+
+            <div class="flex items-center gap-2 w-full mt-2">
+              <input
+                [id]="'num-' + motor.id"
+                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                type="number"
+                [min]="motor.min"
+                [max]="motor.max"
+                [step]="motor.step"
+                [value]="motor.value"
+                (change)="updateMotor(motor, $any($event.target).value)"
+              />
+
+              <button
+                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                (click)="resetMotor(motor)"
+              >
+                0
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="flex-shrink-0 w-full lg:w-1/4 flex flex-col gap-4 overflow-hidden">
+      <div class="bg-surface-dark rounded-sm p-4 shadow-lg border border-border-lacquer flex-grow flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+          <h2 class="text-lg font-display text-gray-200 tracking-wider flex items-center gap-2">
+            <span class="material-icons-round text-primary">playlist_play</span>
+            SEQUENCER
+          </h2>
+        </div>
+
+        <div id="sequencerList" class="flex-grow overflow-y-auto pr-1 space-y-2 mb-4 custom-scrollbar">
+          <div
+            *ngFor="let rawFrame of sequence; let i = index"
+            class="sequencer-item group flex items-center justify-between p-3 bg-card-dark border border-gray-800 border-l-4 rounded-sm hover:bg-gray-900 transition cursor-pointer"
+            [ngClass]="isPlaying && currentStepIndex === i ? 'border-l-primary active' : 'border-l-gray-700'"
+            (click)="moveToFrame(rawFrame)"
+          >
+            <div class="flex flex-col">
+              <span class="font-bold text-white font-mono text-sm">#{{ i + 1 }} - MOVE</span>
+              <span class="text-xs text-gray-500 font-mono">
+                Dur: {{ normalizeFrame(rawFrame).duration || 5000 }}ms •
+                B: {{ getDisplayValue(rawFrame, 'm1') }}° •
+                S: {{ getDisplayValue(rawFrame, 'm2') }}° •
+                E: {{ getDisplayValue(rawFrame, 'm3') }}°
+              </span>
+            </div>
+
+            <button
+              class="text-gray-600 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="deleteFrame(i); $event.stopPropagation()"
+            >
+              <span class="material-icons-round text-sm">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button
+            id="addFrameBtn"
+            class="flex items-center justify-center gap-1 bg-gray-900 hover:bg-gray-800 text-white border border-gray-700 py-2 rounded-sm font-mono text-sm transition"
+            (click)="addFrame()"
+          >
+            <span class="material-icons-round text-sm">add</span>
+            Add Frame
+          </button>
+
+          <button
+            id="clearBtn"
+            class="flex items-center justify-center gap-1 bg-transparent border border-red-900 text-red-500 hover:bg-red-900/20 py-2 rounded-sm font-mono text-sm transition"
+            (click)="clearSequence()"
+          >
+            <span class="material-icons-round text-sm">delete_outline</span>
+            Clear
+          </button>
+        </div>
+
+        <div class="mt-auto bg-black rounded-sm p-4 border border-border-lacquer">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">
+              Step Duration (ms)
+            </span>
+
+            <input
+              id="stepDuration"
+              class="w-20 bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-right font-mono text-sm text-primary font-bold focus:outline-none focus:border-primary"
+              type="number"
+              [(ngModel)]="stepDuration"
+              min="100"
+              step="100"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <button
+              id="playBtn"
+              class="bg-primary hover:bg-primary-light text-white border border-red-900 font-display font-bold py-3 rounded-sm shadow-neon-red flex items-center justify-center gap-2 transition-transform active:scale-95"
+              (click)="togglePlay()"
+            >
+              <span class="material-icons-round">{{ isPlaying ? 'pause' : 'play_arrow' }}</span>
+              {{ isPlaying ? 'PAUSE' : 'PLAY' }}
+            </button>
+
+            <button
+              id="stopBtn"
+              class="bg-transparent border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-500 font-display font-bold py-3 rounded-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+              [ngClass]="isPlaying ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-50'"
+              (click)="stopPlayback()"
+            >
+              <span class="material-icons-round">stop</span>
+              STOP
+            </button>
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              id="saveJsonBtn"
+              class="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-400 py-2 rounded-sm text-xs font-mono uppercase tracking-wide transition border border-gray-800"
+              (click)="saveSequence()"
+            >
+              Save JSON
+            </button>
+
+            <button
+              id="loadJsonBtn"
+              class="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-400 py-2 rounded-sm text-xs font-mono uppercase tracking-wide transition border border-gray-800"
+              (click)="fileInput.click()"
+            >
+              Load JSON
+            </button>
+
+            <input
+              #fileInput
+              type="file"
+              id="fileInput"
+              class="hidden"
+              accept=".json"
+              (change)="loadSequence($event)"
+            />
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer
+    class="fixed bottom-0 left-0 w-full bg-surface-dark border-t border-border-lacquer py-1 px-6 hidden lg:flex justify-between text-[10px] font-mono text-gray-600"
+  >
+    <span id="systemStatus">{{ systemStatus }}</span>
+    <span id="latencyInfo">{{ latencyInfo }}</span>
+    <span id="uptimeInfo">{{ uptimeInfo }}</span>
+  </footer>
+</div>

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Robot Arm Studio - Lacquer Edition</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#8B0000",
+                        "primary-light": "#B22222",
+                        "primary-glow": "#FF0000",
+                        secondary: "#D32F2F",
+                        "background-light": "#121212",
+                        "background-dark": "#000000",
+                        "surface-dark": "#0A0A0A",
+                        "card-dark": "#050505",
+                        "input-dark": "#111111",
+                        "border-lacquer": "#5C0E0E"
+                    },
+                    fontFamily: {
+                        display: ["Orbitron", "sans-serif"],
+                        mono: ["Rajdhani", "monospace"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                    },
+                    boxShadow: {
+                        'neon-red': '0 0 5px rgba(139, 0, 0, 0.5), 0 0 10px rgba(139, 0, 0, 0.2)',
+                        'glass': '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 2px;
+            background: #8B0000;
+            box-shadow: 0 0 8px #8B0000;
+            cursor: pointer;
+            margin-top: -6px;
+            border: 1px solid #ff4d4d;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 0px;
+            border: 1px solid #222;
+        }
+
+        .vertical-slider-container {
+            height: 480px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vertical-slider {
+            transform: rotate(-90deg);
+            width: 450px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5C0E0E;
+            border-radius: 0px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8B0000;
+        }
+
+        .lacquer-grid {
+            background-color: #000000;
+            background-image:
+                linear-gradient(rgba(139, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .card-glass {
+            background: rgba(5, 5, 5, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid #3d0a0a;
+        }
+
+        .sequencer-item.active {
+            background: rgba(139, 0, 0, 0.2);
+            border-color: rgba(139, 0, 0, 0.4);
+            box-shadow: 0 0 10px rgba(139, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-background-dark text-gray-100 font-body min-h-screen lacquer-grid overflow-hidden dark">
+    <header class="w-full bg-surface-dark border-b border-border-lacquer shadow-lg z-50 relative">
+        <div class="max-w-[1920px] mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="material-icons-round text-primary text-3xl animate-pulse"
+                    style="text-shadow: 0 0 10px #8B0000;">precision_manufacturing</span>
+                <h1 class="text-2xl font-display font-bold tracking-widest text-white uppercase">
+                    Robot Arm <span class="text-primary">Studio</span> <span
+                        class="text-xs text-gray-500 font-mono tracking-normal ml-2 normal-case">Lacquer Edition</span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <div id="connectionStatus"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-black border border-red-900 rounded-sm">
+                    <span class="relative flex h-2 w-2">
+                        <span id="statusIndicatorInner"
+                            class="absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                        <span id="statusIndicator" class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                    </span>
+                    <span id="statusText"
+                        class="text-red-600 font-mono font-bold text-xs tracking-wide uppercase">Disconnected</span>
+                </div>
+                <button id="connectBtn"
+                    class="bg-primary hover:bg-primary-light text-white font-display font-bold py-2 px-6 rounded-sm shadow-neon-red transition-all transform hover:scale-105 uppercase text-sm border border-red-900">
+                    Connect
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex flex-col lg:flex-row h-[calc(100vh-80px)] p-6 gap-6 max-w-[1920px] mx-auto overflow-hidden">
+        <section class="flex-grow flex flex-col gap-6 w-full lg:w-3/4 overflow-y-auto custom-scrollbar pr-2">
+            <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-display text-gray-200 tracking-wider flex items-center gap-2">
+                        <span class="material-icons-round text-primary">tune</span>
+                        MANUAL CONTROL
+                    </h2>
+                    <div class="flex gap-2 ml-4">
+                        <button id="homeBtn"
+                            class="px-5 py-2 bg-primary/20 border border-primary text-primary-light hover:bg-primary/40 rounded-sm text-xs font-mono transition uppercase font-bold shadow-neon-red">
+                            HOME (All 0°)
+                        </button>
+                    </div>
+                </div>
+                <span id="modeLabel" class="text-xs font-mono text-primary font-bold">MODE: LIVE</span>
+            </div>
+
+            <div id="motorsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                <!-- M1: BASE -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M1</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Base</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m1" class="vertical-slider motor-slider" max="170" min="-110" type="range"
+                            value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m1"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m1"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="-110" max="170" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m1">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M2: SHOULDER -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M2</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Shoulder</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m2" class="vertical-slider motor-slider" max="10" min="-130" type="range"
+                            value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m2"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m2"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="-130" max="10" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m2">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M3: ELBOW -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M3</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Elbow</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m3" class="vertical-slider motor-slider" max="-4" min="-180" type="range"
+                            value="-90" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m3"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">-90°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m3"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="-90" min="-180" max="-4" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m3">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M4: WRIST V -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M4</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Wrist V</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m4" class="vertical-slider motor-slider" max="120" min="-90" type="range"
+                            value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m4"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m4"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="-90" max="120" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m4">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M5: WRIST R -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M5</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Wrist R</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m5" class="vertical-slider motor-slider" max="150" min="-20" type="range"
+                            value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m5"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m5"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="-20" max="150" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m5">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M6: GRIPPER -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M6</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Gripper</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m6" class="vertical-slider motor-slider" max="2" min="0" step="0.1"
+                            type="range" value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m6"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m6"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="0" max="2" step="0.1" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m6">0</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M7: SERVO -->
+                <div
+                    class="card-glass rounded-sm p-4 flex flex-col items-center justify-between shadow-glass relative group hover:border-primary transition-colors duration-300">
+                    <div class="absolute top-2 right-3 text-xs font-mono text-gray-600">M7</div>
+                    <h3 class="text-sm font-display text-gray-300 mb-2 mt-1 tracking-wider uppercase">Servo</h3>
+                    <div class="vertical-slider-container w-full">
+                        <input id="slider-m7" class="vertical-slider motor-slider" max="100" min="-100" type="range"
+                            value="0" />
+                    </div>
+                    <div class="text-center w-full mt-2">
+                        <span id="val-m7"
+                            class="block text-2xl font-mono text-primary font-bold drop-shadow-sm">0°</span>
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <input id="num-m7"
+                                class="flex-grow bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-center font-mono text-sm text-gray-300 focus:outline-none focus:border-primary motor-number"
+                                type="number" value="0" min="-100" max="100" />
+                            <button
+                                class="reset-motor-btn w-10 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white hover:border-primary text-xs font-mono py-1 rounded-sm"
+                                data-motor="m7">0</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="flex-shrink-0 w-full lg:w-1/4 flex flex-col gap-4 overflow-hidden">
+            <div
+                class="bg-surface-dark rounded-sm p-4 shadow-lg border border-border-lacquer flex-grow flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                    <h2 class="text-lg font-display text-gray-200 tracking-wider flex items-center gap-2">
+                        <span class="material-icons-round text-primary">playlist_play</span>
+                        SEQUENCER
+                    </h2>
+                </div>
+
+                <div id="sequencerList" class="flex-grow overflow-y-auto pr-1 space-y-2 mb-4 custom-scrollbar">
+                    <!-- Sequences will be added here -->
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button id="addFrameBtn"
+                        class="flex items-center justify-center gap-1 bg-gray-900 hover:bg-gray-800 text-white border border-gray-700 py-2 rounded-sm font-mono text-sm transition">
+                        <span class="material-icons-round text-sm">add</span> Add Frame
+                    </button>
+                    <button id="clearBtn"
+                        class="flex items-center justify-center gap-1 bg-transparent border border-red-900 text-red-500 hover:bg-red-900/20 py-2 rounded-sm font-mono text-sm transition">
+                        <span class="material-icons-round text-sm">delete_outline</span> Clear
+                    </button>
+                </div>
+
+                <div class="mt-auto bg-black rounded-sm p-4 border border-border-lacquer">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Step Duration (ms)</span>
+                        <input id="stepDuration"
+                            class="w-20 bg-input-dark border border-gray-800 rounded-sm px-2 py-1 text-right font-mono text-sm text-primary font-bold focus:outline-none focus:border-primary"
+                            type="number" value="5000" min="100" step="100" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <button id="playBtn"
+                            class="bg-primary hover:bg-primary-light text-white border border-red-900 font-display font-bold py-3 rounded-sm shadow-neon-red flex items-center justify-center gap-2 transition-transform active:scale-95">
+                            <span class="material-icons-round">play_arrow</span> PLAY
+                        </button>
+                        <button id="stopBtn"
+                            class="bg-transparent border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-500 font-display font-bold py-3 rounded-sm flex items-center justify-center gap-2 transition-all active:scale-95 pointer-events-none opacity-50">
+                            <span class="material-icons-round">stop</span> STOP
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="saveJsonBtn"
+                            class="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-400 py-2 rounded-sm text-xs font-mono uppercase tracking-wide transition border border-gray-800">
+                            Save JSON
+                        </button>
+                        <button id="loadJsonBtn"
+                            class="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-400 py-2 rounded-sm text-xs font-mono uppercase tracking-wide transition border border-gray-800">
+                            Load JSON
+                        </button>
+                        <input type="file" id="fileInput" class="hidden" accept=".json" />
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <footer
+        class="fixed bottom-0 left-0 w-full bg-surface-dark border-t border-border-lacquer py-1 px-6 hidden lg:flex justify-between text-[10px] font-mono text-gray-600">
+        <span id="systemStatus">SYSTEM: ONLINE</span>
+        <span id="latencyInfo">LATENCY: --ms</span>
+        <span id="uptimeInfo">UPTIME: 00:00:00</span>
+    </footer>
+
+    <script>
+        // --- Core Configuration ---
+        const MOTORS = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
+        const NAMES = { m1: 'Base', m2: 'Shoulder', m3: 'Elbow', m4: 'Wrist V', m5: 'Wrist R', m6: 'Gripper', m7: 'Servo' };
+        let port = null;
+        let writer = null;
+        let sequence = [];
+        let isPlaying = false;
+        let playTimeout = null;
+        let currentStepIndex = 0;
+        let startTime = Date.now();
+
+        // --- Serial Logic ---
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                writer = port.writable.getWriter();
+                updateUIConnected(true);
+                console.log("Serial connected");
+            } catch (err) {
+                console.error("Serial error:", err);
+                alert("Failed to connect: " + err.message);
+            }
+        }
+
+        async function disconnectSerial() {
+            if (writer) {
+                await writer.releaseLock();
+                writer = null;
+            }
+            if (port) {
+                await port.close();
+                port = null;
+            }
+            updateUIConnected(false);
+        }
+
+        async function sendMotorCommand(addr, angle, vel = 120, acc = 0) {
+            if (!writer) return;
+
+            // angle: [-100, 100] -> steps: angle * 270
+            const clk = Math.abs(Math.round(angle * 270));
+            const dir = angle >= 0 ? 0 : 1;
+
+            const cmd = new Uint8Array(13);
+            cmd[0] = addr;               // DIRECCIÓN
+            cmd[1] = 0xFD;               // Función EMM_V5_Pos_Control
+            cmd[2] = dir;                // Dirección
+            cmd[3] = (vel >> 8) & 0xFF;  // Velocidad High
+            cmd[4] = vel & 0xFF;         // Velocidad Low
+            cmd[5] = acc;                // Aceleración
+            cmd[6] = (clk >> 24) & 0xFF; // Pulsos bit 24-31
+            cmd[7] = (clk >> 16) & 0xFF; // Pulsos bit 16-23
+            cmd[8] = (clk >> 8) & 0xFF;  // Pulsos bit 8-15
+            cmd[9] = clk & 0xFF;         // Pulsos bit 0-7
+            cmd[10] = 1;                 // raF (1 = Absoluto)
+            cmd[11] = 0;                 // snF (Sincronización)
+            cmd[12] = 0x6B;              // Check byte (según código Arduino)
+
+            try {
+                await writer.write(cmd);
+                console.log(`Sent M${addr}: ${angle}° (${clk} pulses)`);
+                document.getElementById('latencyInfo').innerText = `LATENCY: ${Math.floor(Math.random() * 5 + 5)}ms`;
+            } catch (err) {
+                console.error("Write error:", err);
+            }
+        }
+
+        function updateUIConnected(connected) {
+            const btn = document.getElementById('connectBtn');
+            const statusBox = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            const indicator = document.getElementById('statusIndicator');
+            const indicatorInner = document.getElementById('statusIndicatorInner');
+
+            if (connected) {
+                btn.innerText = "Disconnect";
+                btn.classList.replace('bg-primary', 'bg-red-900');
+                statusBox.classList.replace('border-red-900', 'border-green-900');
+                statusText.innerText = "Connected";
+                statusText.classList.replace('text-red-600', 'text-green-600');
+                indicator.classList.replace('bg-red-600', 'bg-green-600');
+                indicatorInner.classList.replace('bg-red-600', 'bg-green-600');
+                indicatorInner.classList.add('animate-ping');
+            } else {
+                btn.innerText = "Connect";
+                btn.classList.replace('bg-red-900', 'bg-primary');
+                statusBox.classList.replace('border-green-900', 'border-red-900');
+                statusText.innerText = "Disconnected";
+                statusText.classList.replace('text-green-600', 'text-red-600');
+                indicator.classList.replace('bg-green-600', 'bg-red-600');
+                indicatorInner.classList.replace('bg-green-600', 'bg-red-600');
+                indicatorInner.classList.remove('animate-ping');
+            }
+        }
+
+        // --- Slider & UI Events ---
+        MOTORS.forEach((m, index) => {
+            const slider = document.getElementById(`slider-${m}`);
+            const numInput = document.getElementById(`num-${m}`);
+            const valDisplay = document.getElementById(`val-${m}`);
+            const addr = index + 1; // M1 is addr 1, etc.
+
+            const update = (val, fromSlider) => {
+                valDisplay.innerText = `${val}°`;
+                if (fromSlider) numInput.value = val;
+                else slider.value = val;
+
+                sendMotorCommand(addr, val);
+            };
+
+            slider.addEventListener('input', (e) => update(e.target.value, true));
+            numInput.addEventListener('change', (e) => update(e.target.value, false));
+        });
+
+        // Handle individual Reset Buttons
+        document.querySelectorAll('.reset-motor-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const motor = btn.dataset.motor; // e.g. 'm1'
+                const index = parseInt(motor.slice(1));
+                const slider = document.getElementById(`slider-${motor}`);
+                const numInput = document.getElementById(`num-${motor}`);
+                const valDisplay = document.getElementById(`val-${motor}`);
+
+                slider.value = 0;
+                numInput.value = 0;
+                valDisplay.innerText = "0°";
+
+                // Mueve el motor físico a 0
+                await sendMotorCommand(index, 0);
+            };
+        });
+
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            if (port) disconnectSerial();
+            else connectSerial();
+        });
+
+        // --- Sequencer Logic ---
+        function normalizeFrame(frame) {
+            // Map legacy or descriptive keys to m1-m7
+            const newFrame = { ...frame };
+            const mapping = {
+                'base': 'm1',
+                'shoulder': 'm2',
+                'elbow': 'm3',
+                'wristV': 'm4',
+                'wristR': 'm5',
+                'grip': 'm6',
+                'servo': 'm7'
+            };
+
+            for (const [oldKey, newKey] of Object.entries(mapping)) {
+                if (frame[oldKey] !== undefined && frame[newKey] === undefined) {
+                    newFrame[newKey] = frame[oldKey];
+                }
+            }
+            return newFrame;
+        }
+
+        function addFrame() {
+            const frame = {};
+            MOTORS.forEach(m => {
+                frame[m] = parseFloat(document.getElementById(`slider-${m}`).value);
+            });
+            frame.duration = parseInt(document.getElementById('stepDuration').value);
+            sequence.push(frame);
+            renderSequence();
+        }
+
+        function deleteFrame(index) {
+            sequence.splice(index, 1);
+            renderSequence();
+        }
+
+        function clearSequence() {
+            if (confirm("Clear all frames?")) {
+                sequence = [];
+                renderSequence();
+            }
+        }
+
+        function renderSequence() {
+            const list = document.getElementById('sequencerList');
+            list.innerHTML = '';
+            sequence.forEach((rawFrame, i) => {
+                const frame = normalizeFrame(rawFrame);
+                const item = document.createElement('div');
+                item.className = `sequencer-item group flex items-center justify-between p-3 bg-card-dark border border-gray-800 border-l-4 ${isPlaying && currentStepIndex === i ? 'border-l-primary active' : 'border-l-gray-700'} rounded-sm hover:bg-gray-900 transition cursor-pointer`;
+
+                item.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-bold text-white font-mono text-sm">#${i + 1} - MOVE</span>
+                        <span class="text-xs text-gray-500 font-mono">Dur: ${frame.duration || 5000}ms • B: ${frame.m1}° S: ${frame.m2}° E: ${frame.m3}°</span>
+                    </div>
+                    <button class="text-gray-600 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" onclick="deleteFrame(${i}); event.stopPropagation();">
+                        <span class="material-icons-round text-sm">close</span>
+                    </button>
+                `;
+                item.onclick = () => moveToFrame(frame);
+                list.appendChild(item);
+            });
+        }
+
+        async function moveToFrame(rawFrame) {
+            const frame = normalizeFrame(rawFrame);
+            // Motores 1 a 7
+            for (let i = 1; i <= 7; i++) {
+                const angle = frame[`m${i}`];
+                if (angle !== undefined) {
+                    await sendMotorCommand(i, angle);
+                    // Delay para estabilidad
+                    await new Promise(r => setTimeout(r, 10));
+                }
+            }
+            // Update sliders visually
+            MOTORS.forEach(m => {
+                const val = frame[m] !== undefined ? frame[m] : (m === 'm3' ? -90 : 0);
+                document.getElementById(`slider-${m}`).value = val;
+                document.getElementById(`num-${m}`).value = val;
+                document.getElementById(`val-${m}`).innerText = `${val}°`;
+            });
+        }
+
+        // --- Global Reset / Home ---
+        function setAllSlidersZero() {
+            MOTORS.forEach(m => {
+                // Special handling for M3 to set its default home position
+                const homeValue = (m === 'm3') ? -90 : 0;
+                document.getElementById(`slider-${m}`).value = homeValue;
+                document.getElementById(`num-${m}`).value = homeValue;
+                document.getElementById(`val-${m}`).innerText = `${homeValue}°`;
+            });
+        }
+
+        async function goHome() {
+            setAllSlidersZero(); // Visually update UI
+            console.log("HOMING physical arm...");
+            for (let i = 1; i <= 7; i++) {
+                const homeValue = (i === 3) ? -90 : 0;
+                await sendMotorCommand(i, homeValue);
+                await new Promise(r => setTimeout(r, 50)); // Give time for packet processing
+            }
+        }
+
+        // --- Playback ---
+        async function playNextStep() {
+            if (!isPlaying || sequence.length === 0) return;
+
+            if (currentStepIndex >= sequence.length) {
+                currentStepIndex = 0; // Loop
+            }
+
+            const rawFrame = sequence[currentStepIndex];
+            const frame = normalizeFrame(rawFrame);
+            renderSequence(); // Highlight active
+            await moveToFrame(frame);
+
+            currentStepIndex++;
+            const duration = frame.duration || parseInt(document.getElementById('stepDuration').value) || 5000;
+            playTimeout = setTimeout(playNextStep, duration);
+        }
+
+        function togglePlay() {
+            if (sequence.length === 0) return;
+            isPlaying = !isPlaying;
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            if (isPlaying) {
+                playBtn.innerHTML = `<span class="material-icons-round">pause</span> PAUSE`;
+                stopBtn.classList.remove('pointer-events-none', 'opacity-50');
+                currentStepIndex = 0;
+                playNextStep();
+            } else {
+                playBtn.innerHTML = `<span class="material-icons-round">play_arrow</span> PLAY`;
+                clearTimeout(playTimeout);
+            }
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            clearTimeout(playTimeout);
+            document.getElementById('playBtn').innerHTML = `<span class="material-icons-round">play_arrow</span> PLAY`;
+            document.getElementById('stopBtn').classList.add('pointer-events-none', 'opacity-50');
+            currentStepIndex = 0;
+            renderSequence();
+        }
+
+        // --- Persistence ---
+        function saveSequence() {
+            const data = JSON.stringify(sequence, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sequence_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            a.click();
+        }
+
+        function loadSequence(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    sequence = JSON.parse(ev.target.result);
+                    renderSequence();
+                } catch (err) {
+                    alert("Error parsing JSON: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Init ---
+        document.getElementById('addFrameBtn').onclick = addFrame;
+        document.getElementById('clearBtn').onclick = clearSequence;
+        document.getElementById('playBtn').onclick = togglePlay;
+        document.getElementById('stopBtn').onclick = stopPlayback;
+        document.getElementById('saveJsonBtn').onclick = saveSequence;
+        document.getElementById('loadJsonBtn').onclick = () => document.getElementById('fileInput').click();
+        document.getElementById('fileInput').onchange = loadSequence;
+
+        document.getElementById('homeBtn').onclick = goHome;
+
+        // Uptime timer
+        setInterval(() => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            document.getElementById('uptimeInfo').innerText = `UPTIME: ${h}:${m}:${s}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

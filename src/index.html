@@ -6,6 +6,48 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#8B0000",
+          "primary-light": "#B22222",
+          "primary-glow": "#FF0000",
+          secondary: "#D32F2F",
+          "background-light": "#121212",
+          "background-dark": "#000000",
+          "surface-dark": "#0A0A0A",
+          "card-dark": "#050505",
+          "input-dark": "#111111",
+          "border-lacquer": "#5C0E0E"
+        },
+        fontFamily: {
+          display: ["Orbitron", "sans-serif"],
+          mono: ["Rajdhani", "monospace"],
+          body: ["Inter", "sans-serif"]
+        },
+        borderRadius: {
+          DEFAULT: "0.25rem"
+        },
+        boxShadow: {
+          "neon-red": "0 0 5px rgba(139, 0, 0, 0.5), 0 0 10px rgba(139, 0, 0, 0.2)",
+          glass: "0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)"
+        }
+      }
+    }
+  };
+</script>
 </head>
 <body>
   <app-root></app-root>
